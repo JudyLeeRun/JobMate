@@ -132,7 +132,7 @@ export default function App() {
   }, []);
 
   const handleGenerate = useCallback(async (focus: FocusOption) => {
-    setCollapsed(false); setDebug('⏳ LLM 分析页面...');
+    setCollapsed(false); setDebug('⏳ 正在分析岗位并生成招呼语...');
     setStatus('loading'); setResult(null); setCopied(false);
     setAutoFilled(false); autoFilledRef.current = false; stopPoll();
 
@@ -144,7 +144,7 @@ export default function App() {
       const pageText = jd.text;
       if (!pageText.trim()) { setDebug('❌ 页面无内容'); setStatus('error'); return; }
 
-      // 第一步：LLM 提取 + 生成
+      // 页面前4000字符已在本地按边界提纯，再交给模型分析和生成
       const response = await chrome.runtime.sendMessage({
         type: 'EXTRACT_AND_GENERATE', pageText, focus,
       }) as {
@@ -202,9 +202,9 @@ export default function App() {
   const valid = s >= 0;
 
   return (
-    <div style={{ display: 'inline-flex', flexDirection: 'column', verticalAlign: 'middle' }}>
+    <div style={{ display: 'inline-flex', flexDirection: 'column', verticalAlign: 'middle', width: 360, maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: 14, borderRadius: 12, background: '#ffffff', border: '1px solid #dfeee5', boxShadow: '0 6px 22px rgba(34, 85, 57, 0.08)', color: '#374151' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>JobMate{pageMode === 'history' ? ' · 历史' : ''}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#357557' }}>JobMate{pageMode === 'history' ? ' · 历史' : ''}</span>
         <button onClick={() => setCollapsed(true)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 4, color: '#9ca3af', fontSize: 11, cursor: 'pointer', padding: '1px 8px' }}>收起</button>
       </div>
 
@@ -218,24 +218,24 @@ export default function App() {
         }}>{lookingUp ? '查找中...' : '查历史招呼语 →'}</button>
       </div>
 
-      {jdNotice && <div role="status" data-testid="jd-missing-notice" style={{ marginTop: 8, maxWidth: 340, padding: 8, background: '#fffbeb', color: '#92400e', fontSize: 12, lineHeight: 1.6 }}>{jdNotice}</div>}
+      {jdNotice && <div role="status" data-testid="jd-missing-notice" style={{ marginTop: 8, maxWidth: 340, padding: 10, borderRadius: 8, border: '1px solid #f3e6bb', background: '#fffbeb', color: '#92400e', fontSize: 12, lineHeight: 1.6 }}>{jdNotice}</div>}
 
-      {debug && <div style={{ fontSize: 12, marginTop: 4, maxWidth: 300, lineHeight: 1.4, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: debug.startsWith('❌') ? '#dc2626' : debug.startsWith('✅') ? '#16a34a' : '#2563eb' }}>{debug}</div>}
+      {debug && <div style={{ fontSize: 12, marginTop: 8, padding: '8px 10px', borderRadius: 8, background: status === 'error' ? '#fef2f2' : '#f0faf5', maxWidth: 340, lineHeight: 1.6, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: debug.startsWith('❌') ? '#dc2626' : debug.startsWith('✅') ? '#16a34a' : '#2563eb' }}><strong>{status === 'error' ? '提示 · ' : status === 'loading' ? '处理中 · ' : '状态 · '}</strong>{debug}</div>}
 
       {result && status === 'ready' && (
-        <div style={{ marginTop: 8, padding: 12, borderRadius: 8, maxWidth: 340, background: '#fff', border: '1px solid #e5e7eb', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+        <div style={{ marginTop: 10, padding: 12, borderRadius: 10, maxWidth: 340, background: '#fff', border: '1px solid #e5e7eb', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
           {jdNotice && <div style={{ fontSize: 12, color: '#92400e', marginBottom: 8 }}>未获取 JD · 基于简历技能生成</div>}
           {valid && <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 6, background: valid ? (s >= 80 ? '#f0fdf4' : s >= 60 ? '#fffbeb' : '#fef2f2') : '#f9fafb' }}>
             <span style={{ fontSize: 12, color: '#6b7280' }}>匹配度</span>
             <span style={{ fontSize: 24, fontWeight: 700, color: scoreColor(s), lineHeight: 1 }}>{valid ? s : '—'}</span>
             {valid && <span style={{ fontSize: 12, color: '#9ca3af' }}>/100</span>}
-            {jdNotice && <div style={{ fontSize: 12, color: '#92400e', marginBottom: 8 }}>未获取 JD · 基于简历技能生成</div>}
+
           {valid && <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#e5e7eb', overflow: 'hidden' }}><div style={{ width: `${s}%`, height: '100%', borderRadius: 3, background: scoreColor(s), transition: 'width 0.5s' }} /></div>}
           </div>}
           {formatCheck && [...formatCheck.errors, ...formatCheck.warnings].map(note => <div key={note} role="status" style={{ fontSize: 12, color: '#92400e', marginBottom: 6 }}>{note}</div>)}
           {result.scoreReason && <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10, lineHeight: 1.5, padding: '6px 8px', borderRadius: 4, background: '#f9fafb' }}>💡 {result.scoreReason}</div>}
           <div style={{ fontSize: 13, lineHeight: 1.7, color: '#1f2937', marginBottom: 10, whiteSpace: 'pre-wrap' }}>{result.greeting}</div>
-            <button onClick={handleCopy} style={{ width: '100%', padding: '8px 0', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none', cursor: 'pointer', background: copied ? '#16a34a' : '#22c55e', color: '#fff' }}>{copied ? '✅ 已复制 — Ctrl+V 粘贴' : '📋 复制招呼语'}</button>
+            <button onClick={handleCopy} style={{ width: '100%', padding: '8px 0', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none', cursor: 'pointer', background: copied ? '#438b65' : '#5ebb8a', color: '#fff' }}>{copied ? '✅ 已复制 — Ctrl+V 粘贴' : '📋 复制招呼语'}</button>
         </div>
       )}
       <Toast toast={toast} onDone={clearToast} />
